@@ -1,0 +1,29 @@
+{
+  "name": "playwright-mcp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:api-public": "npx playwright test --project=api-public",
+    "test:api-auth": "npx playwright test --project=api-authenticated",
+    "test:ui-public": "npx playwright test --project=ui-public",
+    "test:ui-auth": "npx playwright test --project=ui-authenticated",
+    "test:chromium": "npx playwright test --project chromium",
+    "test:first": "npx playwright test --grep @first",
+    "test:local": "BASE_URL=http://localhost:4200 npx playwright test",
+    "test:report": "npx playwright test && npx playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.9.1"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}

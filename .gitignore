@@ -1,0 +1,14 @@
+
+.DS_Store
+.tmp
+npm-debug.log
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+.hars/
+.auth/
+.env
+test-cases.md
+steps.txt

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@dataFactory/*": ["library/dataFactory/*"],
+      "@helpers/*": ["library/helpers/*"],
+      "@fixtures/*": ["library/fixtures/*"],
+      "@pages/*": ["library/pages/*"],
+      "@app-types/*": ["library/types/*"],
+      "@config/*": ["library/config/*"]
+    }
+  }
+}
