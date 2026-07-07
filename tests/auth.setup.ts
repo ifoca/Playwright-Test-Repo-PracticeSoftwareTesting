@@ -20,6 +20,7 @@ setup(
     // Log in with the new user via he UI
     await loginPage.gotoLoginPage();
     await loginPage.loginWith(email, password);
+    await expect(loginPage.pageTitle).toHaveText(/My account/i);
 
     // Saves the browser storage state into a file (cookies, local storage etc.)
     await context.storageState({ path: STORAGE_FILE });
