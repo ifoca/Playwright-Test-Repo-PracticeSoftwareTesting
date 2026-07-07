@@ -17,6 +17,13 @@ jobs:
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
+      - name: Debug env vars
+        run: |
+          echo UI_BASE_URL is: '$UI_BASE_URL'
+          echo API_BASE_URL is: '$API_BASE_URL'
+        env:
+          UI_BASE_URL: ${{ vars.UI_BASE_URL }}
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
       - name: Run Playwright tests
         run: npx playwright test
         env:
