@@ -13,22 +13,33 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+      - name: Checkout app under test
+        run: |
+          git clone --depth 1 https://github.com/testsmith-io/practice-software-testing.git app-under-test
+
+      - name: Start app under test
+        working-directory: app-under-test
+        run: |
+          echo "SPRINT=sprint5" > .env
+          docker compose -f docker-compose.yml up -d --build
+
+      - name: Wait for services and seed database
+        working-directory: app-under-test
+        run: |
+          npx wait-on http://localhost:4200 http://localhost:8091
+          docker compose exec -T laravel-api php artisan migrate:fresh --seed
+
       - name: Install dependencies
         run: npm ci
+
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
-      - name: Debug env vars
-        run: |
-          echo UI_BASE_URL is: '$UI_BASE_URL'
-          echo API_BASE_URL is: '$API_BASE_URL'
-        env:
-          UI_BASE_URL: ${{ vars.UI_BASE_URL }}
-          API_BASE_URL: ${{ vars.API_BASE_URL }}
+
       - name: Run Playwright tests
         run: npx playwright test
         env:
-          UI_BASE_URL: ${{ vars.UI_BASE_URL }}
-          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          UI_BASE_URL: http://localhost:4200
+          API_BASE_URL: http://localhost:8091
           CUSTOMER_EMAIL: ${{ vars.CUSTOMER_EMAIL }}
           CUSTOMER_PASSWORD: ${{ secrets.CUSTOMER_PASSWORD }}
       - uses: actions/upload-artifact@v4

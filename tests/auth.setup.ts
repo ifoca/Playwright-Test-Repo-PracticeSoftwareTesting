@@ -17,7 +17,7 @@ setup(
     expect(loginResponse.status).toBe(200);
     expect(loginResponse.loggedInUser).toHaveProperty('access_token');
 
-    // Log in with the new user via he UI
+    // Log in with the new user via the UI
     await loginPage.gotoLoginPage();
     await loginPage.loginWith(email, password);
     await expect(loginPage.pageTitle).toHaveText(/My account/i);
