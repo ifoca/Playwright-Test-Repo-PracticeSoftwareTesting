@@ -27,6 +27,19 @@ jobs:
         working-directory: app-under-test
         run: |
           npx wait-on http://localhost:4200 http://localhost:8091
+
+      - name: Wait for database to be ready
+        working-directory: app-under-test
+        run: |
+          for i in {1..30}; do
+          docker compose exec -T mariadb mysqladmin ping -h localhost -uroot -proot --silent && break
+          echo "Waiting for MariaDB..."
+          sleep 2
+          done
+
+      - name: Run migrations and seed
+        working-directory: app-under-test
+        run: |
           docker compose exec -T laravel-api php artisan migrate:fresh --seed
 
       - name: Install dependencies
