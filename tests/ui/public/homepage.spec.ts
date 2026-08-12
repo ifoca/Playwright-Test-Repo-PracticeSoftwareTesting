@@ -1,6 +1,9 @@
 import { test, expect } from '@fixtures/base.fixture';
 import type { ProductsResponse } from '@app-types/api.types';
 import { buildMockProduct } from '@helpers/ui/mockProductFactory';
+import { containsFilters } from '@helpers/reqBodyMatcher';
+
+const screwdriverCatId = '01KZVSCAFB6QRDMPAB86FPGJNT';
 
 test.describe('Homepage UI tests', () => {
   test.beforeEach(async ({ homepage }) => {
@@ -19,11 +22,17 @@ test.describe('Homepage UI tests', () => {
     }) => {
       const screwdriver = 'Screwdriver';
       const [productsPromise] = await Promise.all([
-        captureResponse<ProductsResponse>(/\/products\?.*by_category=/),
+        captureResponse<ProductsResponse>(
+          '/products',
+          containsFilters({ by_category: screwdriverCatId }),
+        ),
         await homepage.applyFilterLabel(screwdriver),
       ]);
 
       const apiProducts = productsPromise.data;
+      for (const prod of apiProducts) {
+        expect(prod.category?.id).toBe(screwdriverCatId);
+      }
       await homepage.expectCardsToHaveCount(apiProducts.length);
 
       for (const prod of apiProducts) {
