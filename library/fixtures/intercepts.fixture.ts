@@ -10,18 +10,25 @@ export type MockOptions = {
   headers?: Record<string, string>;
 };
 
+// Function type for the body matcher
+export type BodyMatcher = (body: unknown) => boolean;
+
 // define a type for the intercepted and for the mocked requests
 type InterceptFixtures = {
   // take a url as a parameter and returns the type of the response OR unknown
   /**
    * Captures the response from an API call
    * @param urlPattern - URL pattern to intercept (supports wildcards)
+   * @param bodyMatcher - matching the expected body with the body of the intercepted request
    * @returns Promise that resolves with the parsed JSON response
    *
    * @example
    * const products = await apiInterceptor.captureResponse<Product[]>('products')
    */
-  captureResponse: <T = unknown>(urlPattern: string | RegExp) => Promise<T>;
+  captureResponse: <T = unknown>(
+    urlPattern: string | RegExp,
+    bodyMatcher?: BodyMatcher,
+  ) => Promise<T>;
 
   // takes a url, some data and eventually some optional extra mockOptions params for making a fake request
   /**
@@ -57,17 +64,38 @@ export const test = base.extend<InterceptFixtures>({
   // },
 
   captureResponse: async ({ page }, use) => {
-    await use(async <T = unknown>(urlPattern: string | RegExp): Promise<T> => {
-      const responsePromise = page.waitForResponse((response) => {
-        const url = response.url();
-        const urlMatches =
-          typeof urlPattern === 'string' ? url.includes(urlPattern) : urlPattern.test(url);
-        return urlMatches; // && response.status() === 200 ; // no status filter — the fixture just captures, the test asserts
-      });
+    await use(
+      async <T = unknown>(urlPattern: string | RegExp, bodyMatcher?: BodyMatcher): Promise<T> => {
+        // const responsePromise = page.waitForResponse((response) => {
+        //   const url = response.url();
+        //   const urlMatches =
+        //     typeof urlPattern === 'string' ? url.includes(urlPattern) : urlPattern.test(url);
+        //   return urlMatches; // && response.status() === 200 ; // no status filter — the fixture just captures, the test asserts
+        // });
+        const responsePromise = page.waitForResponse(async (response) => {
+          const url = response.url();
+          const urlMatches =
+            typeof urlPattern === 'string' ? url.includes(urlPattern) : urlPattern.test(url);
 
-      const response = await responsePromise;
-      return response.json() as Promise<T>;
-    });
+          if (!urlMatches) return false;
+          if (!bodyMatcher) return true;
+
+          // Check the request body for the QUERY method
+          const requestBody = response.request().postData();
+          if (!requestBody) return false;
+
+          try {
+            const parsed = JSON.parse(requestBody);
+            return bodyMatcher(parsed);
+          } catch {
+            return false;
+          }
+        });
+
+        const response = await responsePromise;
+        return response.json() as Promise<T>;
+      },
+    );
   },
 
   mockResponse: async ({ page }, use) => {

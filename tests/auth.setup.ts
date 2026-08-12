@@ -12,17 +12,15 @@ setup(
 
     const { email, password } = registerResponse.credentials;
 
-    // Log in with the new user via API
+    // Log in with the new user via API to store the access toke
     const loginResponse = await apiLogin(apiRequest, email, password);
     expect(loginResponse.status).toBe(200);
     expect(loginResponse.loggedInUser).toHaveProperty('access_token');
 
-    // Log in with the new user via the UI
+    // Log in with the new user via the UI to save the browser storage state
     await loginPage.gotoLoginPage();
     await loginPage.loginWith(email, password);
     await expect(loginPage.pageTitle).toHaveText(/My account/i);
-
-    // Saves the browser storage state into a file (cookies, local storage etc.)
     await context.storageState({ path: STORAGE_FILE });
   },
 );
