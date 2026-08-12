@@ -61,3 +61,8 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+      - name: Add report summary
+        if: ${{ !cancelled() }}
+        run: |
+          echo "## Playwright Test Results" >> $GITHUB_STEP_SUMMARY
+          npx playwright show-report --reporter=list playwright-report >> $GITHUB_STEP_SUMMARY 2>&1 || true
