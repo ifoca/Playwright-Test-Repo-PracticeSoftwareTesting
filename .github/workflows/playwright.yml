@@ -48,11 +48,19 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
 
+      - name: Sanity check API before running tests
+        working-directory: app-under-test
+        run: |
+          echo "--- Direct curl to API ---"
+          curl -s -w "\nHTTP Status: %{http_code}\n" http://localhost:8091/products || true
+          echo "--- Laravel log tail ---"
+          docker compose exec -T laravel-api tail -n 50 storage/logs/laravel.log || true
+
       - name: Run Playwright tests
         run: npx playwright test
         env:
-          UI_BASE_URL: ${{ vars.UI_BASE_URL }}
-          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          UI_BASE_URL: http://localhost:4200
+          API_BASE_URL: http://localhost:8091
           CUSTOMER_EMAIL: ${{ vars.CUSTOMER_EMAIL }}
           CUSTOMER_PASSWORD: ${{ secrets.CUSTOMER_PASSWORD }}
       - uses: actions/upload-artifact@v4
