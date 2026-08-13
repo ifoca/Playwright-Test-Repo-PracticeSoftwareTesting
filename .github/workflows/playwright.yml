@@ -48,6 +48,15 @@ jobs:
         run: |
           docker compose exec -T laravel-api php artisan migrate:fresh --seed
 
+      - name: Enable debug mode temporarily
+        working-directory: app-under-test
+        run: |
+          docker compose exec -T laravel-api sed -i 's/APP_DEBUG=false/APP_DEBUG=true/' .env
+          docker compose exec -T laravel-api php artisan config:clear
+
+      - name: Curl with debug enabled
+        run: curl -s http://localhost:8091/products | head -c 3000
+
       - name: Install dependencies
         run: npm ci
 
