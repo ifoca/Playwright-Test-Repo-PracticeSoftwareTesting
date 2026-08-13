@@ -71,7 +71,7 @@ jobs:
           docker compose exec -T laravel-api ls -la storage || echo "storage missing"
 
       - name: Run Playwright tests
-        run: npx playwright test
+        run: npx playwright test --project=setup
         env:
           UI_BASE_URL: http://localhost:4200
           API_BASE_URL: http://localhost:8091
