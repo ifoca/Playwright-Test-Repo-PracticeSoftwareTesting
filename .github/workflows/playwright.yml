@@ -52,9 +52,17 @@ jobs:
         working-directory: app-under-test
         run: |
           echo "--- Direct curl to API ---"
+          echo "--- Direct curl to API ---"
           curl -s -w "\nHTTP Status: %{http_code}\n" http://localhost:8091/products || true
-          echo "--- Laravel log tail ---"
-          docker compose exec -T laravel-api tail -n 50 storage/logs/laravel.log || true
+
+          echo "--- laravel-api container logs (stdout/stderr) ---"
+          docker compose logs laravel-api --tail=100
+
+          echo "--- storage/logs directory listing ---"
+          docker compose exec -T laravel-api ls -la storage/logs || echo "storage/logs missing"
+
+          echo "--- storage directory listing ---"
+          docker compose exec -T laravel-api ls -la storage || echo "storage missing"
 
       - name: Run Playwright tests
         run: npx playwright test
