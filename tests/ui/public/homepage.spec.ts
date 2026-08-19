@@ -31,7 +31,7 @@ test.describe('Homepage UI tests', () => {
           '/products',
           containsFilters({ by_category: screwdriverSubCatId }),
         ),
-        await homepage.applyFilterLabel(screwdriver),
+        homepage.applyFilterLabel(screwdriver),
       ]);
 
       const apiProducts = productsPromise.data;
@@ -54,7 +54,7 @@ test.describe('Homepage UI tests', () => {
 
       const [productsPromise] = await Promise.all([
         captureResponse<ProductsResponse>('/products', containsFilters({ eco_friendly: 'true' })),
-        await homepage.applyFilterLabel(ecoFriendly),
+        homepage.applyFilterLabel(ecoFriendly),
       ]);
 
       const apiProducts = productsPromise.data;
@@ -76,11 +76,8 @@ test.describe('Homepage UI tests', () => {
       const descendingPrice = 'Price (High - Low)';
 
       const [productsPromise] = await Promise.all([
-        captureResponse<ProductsResponse>(
-          //   '/products?page=0&sort=price,desc&between=price,1,100&is_rental=false', // full url as string
-          /\/products\?.*&sort=price,desc/, // matching url pattern as regex
-        ),
-        await homepage.selectSorting(descendingPrice),
+        captureResponse<ProductsResponse>('/products', containsFilters({ sort: 'price,desc' })),
+        homepage.selectSorting(descendingPrice),
       ]);
 
       const apiProducts = productsPromise.data;
@@ -98,6 +95,7 @@ test.describe('Homepage UI tests', () => {
       const uiPrices = await homepage.getDisplayedPrices();
       expect(uiPrices).toEqual(prices);
     });
+
     test('Sort by price ascending changes list order correctly', async ({
       homepage,
       captureResponse,
@@ -105,8 +103,8 @@ test.describe('Homepage UI tests', () => {
       const ascendingPrice = 'Price (Low - High)';
 
       const [productsPromise] = await Promise.all([
-        captureResponse<ProductsResponse>(/\/products?.*sort=price,asc/),
-        await homepage.selectSorting(ascendingPrice),
+        captureResponse<ProductsResponse>('/products', containsFilters({ sort: 'price,asc' })),
+        homepage.selectSorting(ascendingPrice),
       ]);
 
       const apiProducts = productsPromise.data;
@@ -131,14 +129,14 @@ test.describe('Homepage UI tests', () => {
       const searchParam = 'drill';
 
       const [productsPromise] = await Promise.all([
-        captureResponse<ProductsResponse>(`/products/search?q=${searchParam}`),
-        await homepage.searchProductsByName(searchParam),
+        captureResponse<ProductsResponse>(`/products`, containsFilters({ q: searchParam })),
+        homepage.searchProductsByName(searchParam),
       ]);
-      const apiProducts = productsPromise;
+      const apiProducts = productsPromise.data;
 
-      await expect(homepage.productCard).toHaveCount(apiProducts.data.length);
+      await expect(homepage.productCard).toHaveCount(apiProducts.length);
       await homepage.expectSearchResultsCount(
-        `${apiProducts.data.length} products found for '${searchParam}'`,
+        `${apiProducts.length} products found for '${searchParam}'`,
       );
       await homepage.expectEachCardNameToContainText(searchParam);
     });
@@ -150,16 +148,16 @@ test.describe('Homepage UI tests', () => {
       const searchParam = 'blablabla';
 
       const [productsPromise] = await Promise.all([
-        captureResponse<ProductsResponse>(`/products/search?q=${searchParam}`),
-        await homepage.searchProductsByName(searchParam),
+        captureResponse<ProductsResponse>(`/products`, containsFilters({ q: searchParam })),
+        homepage.searchProductsByName(searchParam),
       ]);
 
-      const apiProducts = productsPromise;
-      await expect(homepage.productCard).toHaveCount(apiProducts.data.length);
+      const apiProducts = productsPromise.data;
+      await expect(homepage.productCard).toHaveCount(apiProducts.length);
       await homepage.expectSearchResultsCount(
-        `${apiProducts.data.length} products found for '${searchParam}'`,
+        `${apiProducts.length} products found for '${searchParam}'`,
       );
-      if (apiProducts.data.length === 0) {
+      if (apiProducts.length === 0) {
         await expect(homepage.noResults).toBeVisible();
         await expect(homepage.noResults).toHaveText('There are no products found.');
       }
@@ -170,8 +168,8 @@ test.describe('Homepage UI tests', () => {
 test.describe('Out of stock test', () => {
   test('Out-of-stock product shows "Out of stock" badge', async ({ homepage, captureResponse }) => {
     const [productsPromise] = await Promise.all([
-      captureResponse<ProductsResponse>('/products'),
-      await homepage.gotoHomepage(),
+      captureResponse<ProductsResponse>(`/products`),
+      homepage.gotoHomepage(),
     ]);
 
     const apiProducts = productsPromise.data;
@@ -200,11 +198,15 @@ test.describe('Out of stock test', () => {
     // then the final map returns a new array just with the indexes e.g. [3, 4].
     const outOfStockIndices = apiProducts
       .map((prod, index) => ({ prod, index })) // creates a new array with an object with 2 properties: prod and index
-      .filter(({ prod }) => prod.in_stock === false) // creates a new array with the product not being in stock
-      .map(({ index }) => index); // creates a final array with the index of that filtered product
+      .filter(({ prod }) => prod.in_stock === false) // creates a new array with the products being out of stock
+      .map(({ index }) => index); // creates a final array with the index of the filtered out of stock products
 
+    if (outOfStockIndices.length === 0) {
+      throw new Error(`No out-of-stock product has been returned in the list`);
+    }
     const cards = await homepage.productCard.all();
 
+    // checks the out-of-stock label for each item from the filtered list
     for (const i of outOfStockIndices) {
       await expect(cards[i].getByTestId('out-of-stock')).toBeVisible();
     }
@@ -223,10 +225,7 @@ test.describe('Test with mock data', () => {
       total: 1,
     };
 
-    await mockResponse<ProductsResponse>(
-      '/products?page=1&between=price,1,100&is_rental=false',
-      products,
-    );
+    await mockResponse<ProductsResponse>('/products', products);
 
     await homepage.gotoHomepage();
     await expect(homepage.productCard.first()).toBeVisible();
@@ -238,19 +237,6 @@ test.describe('Test with mock data', () => {
     mockResponse,
     homepage,
   }) => {
-    // const products: ProductsResponse = {
-    //   current_page: 1,
-    //   data: [
-    //     buildMockProduct({ id: '1', name: 'In Stock Item', in_stock: false }),
-    //     buildMockProduct({ id: '2', name: 'Out of Stock Item', in_stock: false }),
-    //   ],
-    //   from: 1,
-    //   last_page: 1,
-    //   per_page: 9,
-    //   to: 2,
-    //   total: 2,
-    // };
-
     const products: ProductsResponse = {
       current_page: 1,
       data: [
@@ -264,10 +250,7 @@ test.describe('Test with mock data', () => {
       total: 2,
     };
 
-    await mockResponse<ProductsResponse>(
-      '/products?page=1&between=price,1,100&is_rental=false',
-      products,
-    );
+    await mockResponse<ProductsResponse>('/products', products);
     await homepage.gotoHomepage();
     await expect(homepage.productCard.first()).toBeVisible();
 
@@ -294,10 +277,7 @@ test.describe('Test with mock data', () => {
       total: 2,
     };
 
-    await mockResponse<ProductsResponse>(
-      '/products?page=1&between=price,1,100&is_rental=false',
-      products,
-    );
+    await mockResponse<ProductsResponse>('/products', products);
     await homepage.gotoHomepage();
     await expect(homepage.productCard.first()).toBeVisible();
 
@@ -321,10 +301,7 @@ test.describe('Test with mock data', () => {
       total: 2,
     };
 
-    await mockResponse<ProductsResponse>(
-      '/products?page=1&between=price,1,100&is_rental=false',
-      products,
-    );
+    await mockResponse<ProductsResponse>('/products', products);
     await homepage.gotoHomepage();
     await expect(homepage.noResults).toBeVisible();
     await expect(homepage.noResults).toHaveText('There are no products found.');
@@ -345,7 +322,7 @@ test.describe('Test with mock data', () => {
       total: 1,
     };
 
-    await mockResponse('/products?page=1&between=price,1,100&is_rental=false', products, {
+    await mockResponse('/products', products, {
       status: 500,
     });
     await homepage.gotoHomepage();
