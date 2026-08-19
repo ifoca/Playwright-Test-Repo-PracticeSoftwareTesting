@@ -43,39 +43,20 @@ type InterceptFixtures = {
 };
 
 export const test = base.extend<InterceptFixtures>({
-  // captureResponse: async ({ page }, use) => {
-  //   await use(async <T = unknown>(urlPattern: string): Promise<T> => {
-  //     return new Promise((resolve, reject) => {
-  //       page.route(API_URL + urlPattern, async (route: Route) => {
-  //         try {
-  //           const response = await route.fetch();
-  //           const data = await response.json();
-  //           await route.continue();
-  //           resolve(data as T);
-  //         } catch (error) {
-  //           await route.continue();
-  //           reject(error);
-  //         }
-  //       });
-  //     });
-  //   });
-  // },
-
   captureResponse: async ({ page }, use) => {
     await use(
       async <T = unknown>(urlPattern: string | RegExp, bodyMatcher?: BodyMatcher): Promise<T> => {
-        // const responsePromise = page.waitForResponse((response) => {
-        //   const url = response.url();
-        //   const urlMatches =
-        //     typeof urlPattern === 'string' ? url.includes(urlPattern) : urlPattern.test(url);
-        //   return urlMatches; // && response.status() === 200 ; // no status filter — the fixture just captures, the test asserts
-        // });
-        const responsePromise = page.waitForResponse(async (response) => {
+        const responsePromise = page.waitForResponse((response) => {
           const url = response.url();
           const urlMatches =
             typeof urlPattern === 'string' ? url.includes(urlPattern) : urlPattern.test(url);
 
           if (!urlMatches) return false;
+
+          // Only consider XHR/fetch API requests
+          const resourceType = response.request().resourceType();
+          if (resourceType !== 'xhr' && resourceType !== 'fetch') return false;
+
           if (!bodyMatcher) return true;
 
           // Check the request body for the QUERY method
