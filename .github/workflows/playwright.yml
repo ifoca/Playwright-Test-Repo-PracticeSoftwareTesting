@@ -26,7 +26,7 @@ jobs:
       - name: Fix storage permissions
         working-directory: app-under-test
         run: |
-          docker compose exec -T laravel-api chmod -R 777 storage bootstrap/cache
+          docker compose exec -u root -T laravel-api chmod -R 777 storage bootstrap/cache
 
       - name: Wait for services and seed database
         working-directory: app-under-test
