@@ -13,6 +13,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get installed Playwright version
+        id: playwright-version
+        run: echo "version=$(node -e "console.log(require('@playwright/test/package.json').version)")" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright Browsers (full, cache miss)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install OS dependencies only (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
       - name: Checkout app under test
         run: |
           git clone --depth 1 https://github.com/testsmith-io/practice-software-testing.git app-under-test
@@ -28,7 +51,7 @@ jobs:
         run: |
           docker compose exec -u root -T laravel-api chmod -R 777 storage bootstrap/cache
 
-      - name: Wait for services and seed database
+      - name: Wait for services
         working-directory: app-under-test
         run: |
           npx wait-on http://localhost:4200 http://localhost:8091
@@ -47,30 +70,11 @@ jobs:
         run: |
           docker compose exec -T laravel-api php artisan migrate:fresh --seed
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Sanity check API before running tests
-        working-directory: app-under-test
-        run: |
-          echo "--- Direct curl to API ---"
-          echo "--- Direct curl to API ---"
-          curl -s -w "\nHTTP Status: %{http_code}\n" http://localhost:8091/products || true
-
-          echo "--- laravel-api container logs (stdout/stderr) ---"
-          docker compose logs laravel-api --tail=100
-
-          echo "--- storage/logs directory listing ---"
-          docker compose exec -T laravel-api ls -la storage/logs || echo "storage/logs missing"
-
-          echo "--- storage directory listing ---"
-          docker compose exec -T laravel-api ls -la storage || echo "storage missing"
-
       - name: Run Playwright tests
-        run: npx playwright test --project=setup
+        run: npx playwright test
         env:
           UI_BASE_URL: http://localhost:4200
           API_BASE_URL: http://localhost:8091
@@ -82,6 +86,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+
       - name: Add report summary
         if: ${{ !cancelled() }}
         run: |
