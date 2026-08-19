@@ -23,6 +23,11 @@ jobs:
           echo "SPRINT=sprint5" > .env
           docker compose -f docker-compose.yml up -d --build
 
+      - name: Fix storage permissions
+        working-directory: app-under-test
+        run: |
+          docker compose exec -T laravel-api chmod -R 777 storage bootstrap/cache
+
       - name: Wait for services and seed database
         working-directory: app-under-test
         run: |
@@ -37,35 +42,10 @@ jobs:
           sleep 2
           done
 
-      - name: Check Laravel .env and APP_KEY
-        working-directory: app-under-test
-        run: |
-          docker compose exec -T laravel-api ls -la .env || echo ".env MISSING"
-          docker compose exec -T laravel-api grep APP_KEY .env || echo "no APP_KEY line found"
-
       - name: Run migrations and seed
         working-directory: app-under-test
         run: |
           docker compose exec -T laravel-api php artisan migrate:fresh --seed
-
-      # - name: Enable debug mode temporarily
-      #   working-directory: app-under-test
-      #   run: |
-      #     docker compose exec -T laravel-api sed -i 's/APP_DEBUG=false/APP_DEBUG=true/' .env
-      #     docker compose exec -T laravel-api php artisan config:clear
-
-      # - name: Curl with debug enabled
-      #   run: curl -s http://localhost:8091/products | head -c 3000
-
-      - name: Test backend logic directly (bypass HTTP layer)
-        working-directory: app-under-test
-        run: |
-          docker compose exec -T laravel-api php artisan tinker --execute="
-            echo 'Category count: ' . App\Models\Category::count() . PHP_EOL;
-            echo 'Product count: ' . App\Models\Product::count() . PHP_EOL;
-            \$tree = app(App\Services\CategoryService::class)->getCategoriesTree(null);
-            echo 'Tree fetched OK, count: ' . count(\$tree) . PHP_EOL;
-          "
 
       - name: Install dependencies
         run: npm ci
