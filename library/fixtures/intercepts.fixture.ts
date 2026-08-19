@@ -1,5 +1,6 @@
 import { test as base } from '@playwright/test';
 import type { Route } from '@playwright/test';
+import type { BodyMatcher } from '@helpers/reqBodyMatcher.helper';
 
 const API_URL = process.env.API_BASE_URL;
 
@@ -9,9 +10,6 @@ export type MockOptions = {
   contentType?: string;
   headers?: Record<string, string>;
 };
-
-// Function type for the body matcher
-export type BodyMatcher = (body: unknown) => boolean;
 
 // define a type for the intercepted and for the mocked requests
 type InterceptFixtures = {

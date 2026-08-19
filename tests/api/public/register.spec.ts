@@ -1,5 +1,5 @@
 import { test, expect } from '@fixtures/base.fixture';
-import { generateRandomString } from '@helpers/utils';
+import { generateRandomString } from '@helpers/utils/utils';
 import type { RegisterResponse } from '@app-types/api.types';
 
 const CUSTOMER_EMAIL = process.env.CUSTOMER_EMAIL!;

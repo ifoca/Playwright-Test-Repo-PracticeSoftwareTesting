@@ -1,6 +1,6 @@
 import { writeFile, mkdir } from 'fs/promises';
 import { AUTH_DIR, USER_FILE } from '@config/filePaths';
-import { generateRandomString } from '@helpers/utils';
+import { generateRandomString } from '@helpers/utils/utils';
 import type { APIRequestContext } from '@playwright/test';
 
 export const registerUser = async (request: APIRequestContext) => {
