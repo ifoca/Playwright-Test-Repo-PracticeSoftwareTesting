@@ -1,11 +1,16 @@
 import { test, expect } from '@fixtures/base.fixture';
 import type { ProductsResponse } from '@app-types/api.types';
-import { buildMockProduct } from '@helpers/ui/mockProductFactory';
-import { containsFilters } from '@helpers/reqBodyMatcher';
+import { buildMockProduct } from '@helpers/ui/mockProductFactory.helper';
+import { containsFilters } from '@helpers/reqBodyMatcher.helper';
+import { getCategoryIdBySubCategoryName } from '@helpers/api/categories.helper';
 
-const screwdriverCatId = '01KZVSCAFB6QRDMPAB86FPGJNT';
+let screwdriverSubCatId: string;
 
 test.describe('Homepage UI tests', () => {
+  test.beforeAll(async ({ apiRequest }) => {
+    screwdriverSubCatId = await getCategoryIdBySubCategoryName(apiRequest, 'Screwdriver');
+  });
+
   test.beforeEach(async ({ homepage }) => {
     await homepage.gotoHomepage();
     await homepage.expectCardsNotToHaveCount(0);
@@ -24,14 +29,14 @@ test.describe('Homepage UI tests', () => {
       const [productsPromise] = await Promise.all([
         captureResponse<ProductsResponse>(
           '/products',
-          containsFilters({ by_category: screwdriverCatId }),
+          containsFilters({ by_category: screwdriverSubCatId }),
         ),
         await homepage.applyFilterLabel(screwdriver),
       ]);
 
       const apiProducts = productsPromise.data;
       for (const prod of apiProducts) {
-        expect(prod.category?.id).toBe(screwdriverCatId);
+        expect(prod.category?.id).toBe(screwdriverSubCatId);
       }
       await homepage.expectCardsToHaveCount(apiProducts.length);
 
@@ -48,7 +53,7 @@ test.describe('Homepage UI tests', () => {
       const ecoFriendly = 'Show only eco-friendly products';
 
       const [productsPromise] = await Promise.all([
-        captureResponse<ProductsResponse>(/\/products\?.*&eco_friendly=true/),
+        captureResponse<ProductsResponse>('/products', containsFilters({ eco_friendly: 'true' })),
         await homepage.applyFilterLabel(ecoFriendly),
       ]);
 
