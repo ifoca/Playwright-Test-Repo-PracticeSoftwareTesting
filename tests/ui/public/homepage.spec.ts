@@ -225,10 +225,7 @@ test.describe('Test with mock data', () => {
       total: 1,
     };
 
-    await mockResponse<ProductsResponse>(
-      '/products?page=1&between=price,1,100&is_rental=false',
-      products,
-    );
+    await mockResponse<ProductsResponse>('/products', products);
 
     await homepage.gotoHomepage();
     await expect(homepage.productCard.first()).toBeVisible();
@@ -240,19 +237,6 @@ test.describe('Test with mock data', () => {
     mockResponse,
     homepage,
   }) => {
-    // const products: ProductsResponse = {
-    //   current_page: 1,
-    //   data: [
-    //     buildMockProduct({ id: '1', name: 'In Stock Item', in_stock: false }),
-    //     buildMockProduct({ id: '2', name: 'Out of Stock Item', in_stock: false }),
-    //   ],
-    //   from: 1,
-    //   last_page: 1,
-    //   per_page: 9,
-    //   to: 2,
-    //   total: 2,
-    // };
-
     const products: ProductsResponse = {
       current_page: 1,
       data: [
@@ -266,10 +250,7 @@ test.describe('Test with mock data', () => {
       total: 2,
     };
 
-    await mockResponse<ProductsResponse>(
-      '/products?page=1&between=price,1,100&is_rental=false',
-      products,
-    );
+    await mockResponse<ProductsResponse>('/products', products);
     await homepage.gotoHomepage();
     await expect(homepage.productCard.first()).toBeVisible();
 
@@ -296,10 +277,7 @@ test.describe('Test with mock data', () => {
       total: 2,
     };
 
-    await mockResponse<ProductsResponse>(
-      '/products?page=1&between=price,1,100&is_rental=false',
-      products,
-    );
+    await mockResponse<ProductsResponse>('/products', products);
     await homepage.gotoHomepage();
     await expect(homepage.productCard.first()).toBeVisible();
 
@@ -323,10 +301,7 @@ test.describe('Test with mock data', () => {
       total: 2,
     };
 
-    await mockResponse<ProductsResponse>(
-      '/products?page=1&between=price,1,100&is_rental=false',
-      products,
-    );
+    await mockResponse<ProductsResponse>('/products', products);
     await homepage.gotoHomepage();
     await expect(homepage.noResults).toBeVisible();
     await expect(homepage.noResults).toHaveText('There are no products found.');
@@ -347,7 +322,7 @@ test.describe('Test with mock data', () => {
       total: 1,
     };
 
-    await mockResponse('/products?page=1&between=price,1,100&is_rental=false', products, {
+    await mockResponse('/products', products, {
       status: 500,
     });
     await homepage.gotoHomepage();
